@@ -72,7 +72,7 @@ uv run python web/app.py
 **方式二：环境变量**
 
 ```bash
-export DEEPSEEK_API_KEY="<your-deepseek-api-key>"
+export DOUYIN_DEEPSEEK_API_KEY="<your-deepseek-api-key>"
 uv run python web/app.py
 ```
 
@@ -111,14 +111,14 @@ uv run python web/app.py
       "command": "uvx",
       "args": ["douyin-mcp-server"],
       "env": {
-        "DEEPSEEK_API_KEY": "<your-deepseek-api-key>"
+        "DOUYIN_DEEPSEEK_API_KEY": "<your-deepseek-api-key>"
       }
     }
   }
 }
 ```
 
-`DEEPSEEK_API_KEY` 只放运行环境，不写入仓库、输出文件或运行报告。
+`DOUYIN_DEEPSEEK_API_KEY` 只放运行环境，不写入仓库、输出文件或运行报告。
 
 ### 可用工具
 
@@ -167,8 +167,8 @@ uv run python scripts/douyin_downloader.py -l "分享链接" -a info
 # 下载无水印视频
 uv run python scripts/douyin_downloader.py -l "分享链接" -a download -o ./videos
 
-# 提取文案（本地 ASR；整理阶段需要 DEEPSEEK_API_KEY）
-export DEEPSEEK_API_KEY="<your-deepseek-api-key>"
+# 提取文案（本地 ASR；整理阶段需要 DOUYIN_DEEPSEEK_API_KEY）
+export DOUYIN_DEEPSEEK_API_KEY="<your-deepseek-api-key>"
 uv run python scripts/douyin_downloader.py -l "分享链接" -a extract -o ./output
 
 ```

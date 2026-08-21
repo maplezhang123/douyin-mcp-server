@@ -234,9 +234,9 @@ def organize_with_deepseek(
     purpose: str = "rewrite",
     api_key: Optional[str] = None,
 ) -> dict:
-    key = api_key or os.getenv("DEEPSEEK_API_KEY", "")
+    key = api_key or os.getenv("DOUYIN_DEEPSEEK_API_KEY", "")
     if not key:
-        raise RuntimeError("未设置 DEEPSEEK_API_KEY，无法完成口播整理")
+        raise RuntimeError("未设置 DOUYIN_DEEPSEEK_API_KEY，无法完成口播整理")
     base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com").rstrip("/")
     model = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
     response = requests.post(

@@ -35,7 +35,7 @@ uv sync --extra web
 本地 ASR 不需要密钥；最后的口播整理需要设置：
 
 ```bash
-set DEEPSEEK_API_KEY=your-deepseek-api-key
+set DOUYIN_DEEPSEEK_API_KEY=your-deepseek-api-key
 ```
 
 密钥只放环境变量，不写入仓库和运行报告。
@@ -51,7 +51,7 @@ python scripts/douyin_downloader.py --link "抖音分享链接" --action info
 # 下载视频到指定目录
 python scripts/douyin_downloader.py --link "抖音分享链接" --action download --output ./videos
 
-# 提取逐字稿并整理口播 (需要 DEEPSEEK_API_KEY)
+# 提取逐字稿并整理口播 (需要 DOUYIN_DEEPSEEK_API_KEY)
 python scripts/douyin_downloader.py --link "抖音分享链接" --action extract --output ./output
 
 # 安静模式 (减少输出)
@@ -121,7 +121,7 @@ print(result['text'])
 
 ### 提取文案失败
 
-- 检查 `DEEPSEEK_API_KEY` 环境变量是否已设置
+- 检查 `DOUYIN_DEEPSEEK_API_KEY` 环境变量是否已设置
 - 检查本地 medium 模型权重是否完整
 - 检查共享 Playwright 包装器与浏览器缓存是否可用
 - 确保 FFmpeg 已正确安装

@@ -9,7 +9,7 @@
 4. 使用 DeepSeek 整理成口播文案
 
 环境变量:
-- DEEPSEEK_API_KEY: DeepSeek API 密钥 (用于口播整理)
+- DOUYIN_DEEPSEEK_API_KEY: DeepSeek API 密钥 (用于口播整理)
 
 使用示例:
   # 获取下载链接 (无需 API 密钥)
@@ -18,7 +18,7 @@
   # 下载视频
   python douyin_downloader.py --link "抖音分享链接" --action download --output ./videos
 
-  # 提取文案并保存到文件 (需要 DEEPSEEK_API_KEY 环境变量)
+  # 提取文案并保存到文件 (需要 DOUYIN_DEEPSEEK_API_KEY 环境变量)
   python douyin_downloader.py --link "抖音分享链接" --action extract --output ./output
 """
 
@@ -375,7 +375,7 @@ def main():
   # 下载视频
   python douyin_downloader.py --link "抖音分享链接" --action download --output ./videos
 
-  # 本地转写并整理口播（需要 DEEPSEEK_API_KEY）
+  # 本地转写并整理口播（需要 DOUYIN_DEEPSEEK_API_KEY）
   python douyin_downloader.py --link "抖音分享链接" --action extract --output ./output
 
         """
@@ -385,7 +385,7 @@ def main():
     parser.add_argument("--action", "-a", choices=["info", "download", "extract"],
                         default="info", help="操作类型: info(获取信息), download(下载视频), extract(转写并整理口播)")
     parser.add_argument("--output", "-o", default="./output", help="输出目录 (默认 ./output)")
-    parser.add_argument("--api-key", "-k", help="DeepSeek API 密钥 (推荐通过 DEEPSEEK_API_KEY 环境变量设置)")
+    parser.add_argument("--api-key", "-k", help="DeepSeek API 密钥 (推荐通过 DOUYIN_DEEPSEEK_API_KEY 环境变量设置)")
     parser.add_argument("--save-video", "-v", action="store_true",
                         help="兼容旧参数；浏览器降级时只保证保存完整音频")
     parser.add_argument("--quiet", "-q", action="store_true", help="安静模式，减少输出")

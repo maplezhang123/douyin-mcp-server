@@ -4,7 +4,7 @@
 
 启动方式:
     cd douyin-mcp-server
-    export DEEPSEEK_API_KEY="sk-xxx"
+    export DOUYIN_DEEPSEEK_API_KEY="<your-deepseek-api-key>"
     python web/app.py
     # 访问 http://localhost:8080
 """
@@ -67,7 +67,7 @@ async def index(request: Request):
 @app.get("/api/health")
 async def health_check():
     """健康检查"""
-    api_key = os.getenv("DEEPSEEK_API_KEY", "")
+    api_key = os.getenv("DOUYIN_DEEPSEEK_API_KEY", "")
     return {
         "status": "ok",
         "api_key_configured": bool(api_key)
@@ -93,7 +93,7 @@ async def get_info(req: VideoRequest):
 async def extract_transcript(req: VideoRequest):
     """执行本地 ASR，并使用 DeepSeek 整理口播文案。"""
     # 优先使用请求中的 API Key，其次使用环境变量
-    api_key = req.api_key or os.getenv("DEEPSEEK_API_KEY", "")
+    api_key = req.api_key or os.getenv("DOUYIN_DEEPSEEK_API_KEY", "")
     if not api_key:
         return ExtractResponse(
             success=False,
@@ -178,7 +178,10 @@ def main():
     host = os.getenv("HOST", "127.0.0.1")
     port = int(os.getenv("PORT", "8080"))
     print(f"🚀 启动文案提取器 WebUI: http://localhost:{port}")
-    print(f"📝 DEEPSEEK_API_KEY 配置状态: {'已配置' if os.getenv('DEEPSEEK_API_KEY') else '未配置'}")
+    print(
+        "📝 DOUYIN_DEEPSEEK_API_KEY 配置状态: "
+        f"{'已配置' if os.getenv('DOUYIN_DEEPSEEK_API_KEY') else '未配置'}"
+    )
     uvicorn.run(app, host=host, port=port)
 
 

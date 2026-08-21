@@ -258,7 +258,7 @@ async def extract_douyin_text(
     返回:
     - 提取的文本内容
 
-    注意: 本地 ASR 不消耗 API；最后整理口播需要 DEEPSEEK_API_KEY
+    注意: 本地 ASR 不消耗 API；最后整理口播需要 DOUYIN_DEEPSEEK_API_KEY
     """
     try:
         if ctx:
@@ -442,11 +442,11 @@ def douyin_text_extraction_guide() -> str:
 
 ## 环境变量配置
 语音识别使用工作站本地 `faster-whisper-medium / CPU int8`，不消耗 API。
-最后一步口播整理使用 `DEEPSEEK_API_KEY`。
+最后一步口播整理使用 `DOUYIN_DEEPSEEK_API_KEY`。
 
 ## 使用步骤
 1. 复制抖音视频的分享链接
-2. 在运行环境中设置 `DEEPSEEK_API_KEY`
+2. 在运行环境中设置 `DOUYIN_DEEPSEEK_API_KEY`
 3. 使用相应的工具进行操作
 
 ## 工具说明
@@ -465,7 +465,7 @@ def douyin_text_extraction_guide() -> str:
       "command": "uvx",
       "args": ["douyin-mcp-server"],
       "env": {
-        "DEEPSEEK_API_KEY": "your-deepseek-api-key"
+        "DOUYIN_DEEPSEEK_API_KEY": "your-deepseek-api-key"
       }
     }
   }

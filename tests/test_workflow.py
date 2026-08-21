@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -38,6 +39,37 @@ class WorkflowTests(unittest.TestCase):
         payload = post.call_args.kwargs["json"]
         self.assertEqual(payload["model"], "deepseek-v4-flash")
         self.assertIn("用途：reference", payload["messages"][1]["content"])
+
+    @patch("douyin_mcp_server.workflow.requests.post")
+    def test_deepseek_organizer_uses_douyin_specific_environment_key(self, post):
+        response = Mock()
+        response.json.return_value = {
+            "choices": [{"message": {"content": "整理结果"}}],
+        }
+        response.raise_for_status.return_value = None
+        post.return_value = response
+
+        with patch.dict(
+            os.environ,
+            {
+                "DOUYIN_DEEPSEEK_API_KEY": "personal-key",
+                "DEEPSEEK_API_KEY": "company-key",
+            },
+            clear=False,
+        ):
+            workflow.organize_with_deepseek("原始逐字稿", "标题")
+
+        self.assertEqual(
+            post.call_args.kwargs["headers"]["Authorization"], "Bearer personal-key"
+        )
+
+    @patch("douyin_mcp_server.workflow.requests.post")
+    def test_deepseek_organizer_never_falls_back_to_generic_environment_key(self, post):
+        with patch.dict(os.environ, {"DEEPSEEK_API_KEY": "company-key"}, clear=True):
+            with self.assertRaisesRegex(RuntimeError, "DOUYIN_DEEPSEEK_API_KEY"):
+                workflow.organize_with_deepseek("原始逐字稿", "标题")
+
+        post.assert_not_called()
 
     @patch("douyin_mcp_server.workflow.run_browser_capture")
     @patch("douyin_mcp_server.workflow.parse_share_url_http")
