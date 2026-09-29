@@ -27,6 +27,7 @@ dependencies = [
     "faster-whisper",
     "tqdm",
     "dashscope",
+    "playwright>=1.63.0",
 ]
 
 [project.optional-dependencies]

@@ -73,7 +73,7 @@ async function downloadByRanges(request, url, destination) {
     return;
   }
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ channel: 'chrome', headless: true });
   try {
     const context = await browser.newContext({
       locale: 'zh-CN',
@@ -106,7 +106,7 @@ async function downloadByRanges(request, url, destination) {
 
     const pageData = await page.evaluate(() => {
       const meta = (property) => document.querySelector(`meta[property="${property}"]`)?.content || '';
-      const title = (meta('og:title') || document.title || '').replace(/\s*[-_]\s*抖音.*$/i, '').trim();
+      const title = (meta('og:title') || document.title || '').replace(/\s*[-_]\s*鎶栭煶.*$/i, '').trim();
       return {
         title,
         description: meta('og:description') || document.querySelector('meta[name="description"]')?.content || '',
