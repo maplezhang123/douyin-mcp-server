@@ -62,6 +62,18 @@ output/
 context/
 prompt.md
 *.mp3
+*.m4a
+*.wav
+*.aac
+*.mp4
+*.mov
+*.webm
+*.bin
+*.safetensors
+*.onnx
+cookies*.txt
+storage-state*.json
+playwright/.auth/
 *.log
 
 node_modules/
