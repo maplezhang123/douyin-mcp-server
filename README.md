@@ -24,11 +24,11 @@
 
 需要先安装 [uv](https://docs.astral.sh/uv/)、[Node.js 18+](https://nodejs.org/)、[FFmpeg](https://ffmpeg.org/) 以及 Chrome 或 Edge。
 
-    git clone <你的仓库地址>
+    git clone https://github.com/maplezhang123/douyin-mcp-server.git
     cd douyin-mcp-server
-    start.bat
+    .\start.bat
 
-start.bat 会检查依赖、安装项目包并打开 http://localhost:8080。它不会永久修改系统环境。
+start.bat 会检查依赖并启动 WebUI，不会永久修改系统环境。启动 WebUI 后访问 http://localhost:8080。
 
 手动启动：
 
