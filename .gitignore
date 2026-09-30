@@ -49,6 +49,10 @@ htmlcov/
 
 .claude
 temp/
+tmp/
+cache/
+models/
+*.tmp
 
 # Local
 .env

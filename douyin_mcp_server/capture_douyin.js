@@ -1,6 +1,15 @@
 const fs = require('fs');
 const path = require('path');
-const { chromium } = require('playwright');
+let chromium;
+try {
+  ({ chromium } = require('playwright'));
+} catch (_) {
+  process.stdout.write(`DOUYIN_CAPTURE_JSON=${JSON.stringify({
+    ok: false,
+    error: 'Playwright package 不存在，请在项目目录运行 npm install',
+  })}\n`);
+  process.exit(2);
+}
 
 const sourceUrl = process.env.DOUYIN_CAPTURE_URL || '';
 const audioPath = process.env.DOUYIN_AUDIO_PATH || '';
@@ -35,7 +44,7 @@ async function downloadByRanges(request, url, destination) {
         timeout: 60000,
       });
       if (!response.ok() && response.status() !== 206) {
-        throw new Error(`audio request failed: HTTP ${response.status()}`);
+        throw new Error(`音频请求失败：HTTP ${response.status()}`);
       }
       const headers = response.headers();
       const body = await response.body();
@@ -45,13 +54,13 @@ async function downloadByRanges(request, url, destination) {
         return body.length;
       }
       if (!range) {
-        throw new Error('partial audio response has no Content-Range');
+        throw new Error('分段音频响应缺少 Content-Range');
       }
       const responseStart = Number(range[1]);
       const responseEnd = Number(range[2]);
       total = Number(range[3]);
       if (responseStart !== start || body.length !== responseEnd - responseStart + 1) {
-        throw new Error(`unexpected audio range ${range[0]} (${body.length} bytes)`);
+        throw new Error(`音频分段范围异常：${range[0]} (${body.length} bytes)`);
       }
       fs.writeSync(handle, body, 0, body.length, responseStart);
       start = responseEnd + 1;
@@ -61,9 +70,26 @@ async function downloadByRanges(request, url, destination) {
   }
   const size = fs.statSync(destination).size;
   if (total && size !== total) {
-    throw new Error(`audio size mismatch: expected ${total}, got ${size}`);
+    throw new Error(`音频大小不完整：预期 ${total}，实际 ${size}`);
   }
   return size;
+}
+
+async function launchBrowser() {
+  const attempts = [
+    { name: 'Chrome', options: { channel: 'chrome', headless: true } },
+    { name: 'Edge', options: { channel: 'msedge', headless: true } },
+    { name: 'Playwright Chromium', options: { headless: true } },
+  ];
+  const errors = [];
+  for (const attempt of attempts) {
+    try {
+      return { browser: await chromium.launch(attempt.options), browser_name: attempt.name };
+    } catch (error) {
+      errors.push(`${attempt.name}: ${error.message}`);
+    }
+  }
+  throw new Error(`未检测到可用的 Chrome/Edge，且 Playwright Chromium 未安装。请安装 Chrome 或 Edge。${errors.join(' | ')}`);
 }
 
 (async () => {
@@ -73,8 +99,10 @@ async function downloadByRanges(request, url, destination) {
     return;
   }
 
-  const browser = await chromium.launch({ channel: 'chrome', headless: true });
+  let launched;
   try {
+    launched = await launchBrowser();
+    const browser = launched.browser;
     const context = await browser.newContext({
       locale: 'zh-CN',
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
@@ -106,7 +134,7 @@ async function downloadByRanges(request, url, destination) {
 
     const pageData = await page.evaluate(() => {
       const meta = (property) => document.querySelector(`meta[property="${property}"]`)?.content || '';
-      const title = (meta('og:title') || document.title || '').replace(/\s*[-_]\s*鎶栭煶.*$/i, '').trim();
+      const title = (meta('og:title') || document.title || '').replace(/\s*[-_]\s*抖音.*$/i, '').trim();
       return {
         title,
         description: meta('og:description') || document.querySelector('meta[name="description"]')?.content || '',
@@ -119,7 +147,7 @@ async function downloadByRanges(request, url, destination) {
       if (!audioPath) throw new Error('DOUYIN_AUDIO_PATH is empty');
       const unique = [...new Map(candidates.map((item) => [item.url, item])).values()]
         .sort((a, b) => b.total - a.total);
-      if (!unique.length) throw new Error('no audio media response was observed');
+      if (!unique.length) throw new Error('没有捕获到音频媒体响应');
       let lastError;
       for (const candidate of unique) {
         try {
@@ -129,13 +157,14 @@ async function downloadByRanges(request, url, destination) {
           lastError = error;
         }
       }
-      if (!audioBytes) throw lastError || new Error('audio download failed');
+      if (!audioBytes) throw lastError || new Error('音频抓取失败');
     }
 
     result({
       ok: true,
       ...pageData,
       video_id: videoId(pageData.final_url) || videoId(sourceUrl),
+      browser: launched.browser_name,
       media_candidates: candidates.length,
       audio_bytes: audioBytes,
     });
@@ -143,6 +172,6 @@ async function downloadByRanges(request, url, destination) {
     result({ ok: false, error: String(error && error.message ? error.message : error) });
     process.exitCode = 2;
   } finally {
-    await browser.close();
+    if (launched && launched.browser) await launched.browser.close();
   }
 })();

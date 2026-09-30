@@ -1,273 +1,135 @@
-# 抖音链接转写与口播整理
+# 抖音文案提取器（Windows 维护版）
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+把抖音视频链接粘贴进 WebUI，自动获取音频并用 SenseVoice 生成逐字稿。HTTP 快速解析失效时，程序会自动使用电脑已有的 Chrome 或 Edge，不需要用户理解页面内部结构。
 
-从抖音分享链接自动解析媒体，本机生成逐字稿，再整理成可用口播文案。
+本项目基于 [yzfly/douyin-mcp-server](https://github.com/yzfly/douyin-mcp-server) 继续维护。感谢原作者和贡献者；本 fork 保留原项目的 Apache-2.0 许可与归属说明。
 
-![WebUI 界面预览](assets/web-preview.png)
+## 为什么有这个 fork
 
-> 本项目基于 [yzfly/douyin-mcp-server](https://github.com/yzfly/douyin-mcp-server) 继续维护；保留原项目的 Apache-2.0 许可。
+原项目停止维护后，抖音页面结构、精选链接和浏览器签名流程已经变化。这个版本集中修复新版链接与浏览器降级，并把默认 ASR 改为轻量、快速的 SiliconFlow SenseVoice，清除了维护者工作站的绝对路径依赖。
 
-## ✨ 功能特性
+| 能力 | v1.0 |
+|---|:---:|
+| 普通 /video/ 链接 | ✅ |
+| jingxuan?modal_id= | ✅ |
+| aweme_id / item_ids / 短链跳转 | ✅ |
+| HTTP 快速解析 | ✅ |
+| Chrome → Edge → Playwright Chromium 降级 | ✅ |
+| SiliconFlow 云 ASR | ✅ 默认 |
+| 本地 Whisper | ✅ 可选 |
+| Windows 一键启动 | ✅ |
+| 固定 D:\AI_Tools | ❌ 已移除 |
 
-- 🎬 **无水印视频** - 获取高质量无水印视频下载链接
-- 🛟 **自动降级** - HTTP 解析失败时使用共享 Playwright 捕获签名音频
-- 🎙️ **本地语音识别** - `faster-whisper-medium / CPU int8`，不消耗 ASR API
-- ✍️ **口播整理** - DeepSeek 去重复、补标点和结构，保留原意
-- 🌐 **WebUI** - 现代化浏览器界面，无需命令行
-- 🔌 **MCP 集成** - 支持 Claude Desktop 等 AI 应用
+## Windows 快速开始
 
-## 项目结构
+需要先安装 [uv](https://docs.astral.sh/uv/)、[Node.js 18+](https://nodejs.org/)、[FFmpeg](https://ffmpeg.org/) 以及 Chrome 或 Edge。
 
-```text
-assets/                 预览图和发布用 skill 包
-douyin_mcp_server/      Python 核心包
-scripts/                命令行入口
-skills/douyin-video/    可复用的工作流说明
-tests/                  单元测试
-web/                    FastAPI WebUI
-```
+    git clone <你的仓库地址>
+    cd douyin-mcp-server
+    start.bat
 
-## 📦 使用方式
+start.bat 会检查依赖、安装项目包并打开 http://localhost:8080。它不会永久修改系统环境。
 
-| 方式 | 适用场景 | 特点 |
-|------|----------|------|
-| [**WebUI**](#-webui-推荐) | 普通用户 | 浏览器操作，最简单 |
-| [**MCP Server**](#-mcp-server) | Claude Desktop 用户 | AI 对话中直接调用 |
-| [**命令行**](#️-命令行工具) | 开发者 | 批量处理，脚本集成 |
+手动启动：
 
----
+    uv sync --extra web
+    npm install
+    uv run --extra web python web/app.py
 
-## 🌐 WebUI (推荐)
+## API Key 配置
 
-最简单的使用方式，打开浏览器即可使用。
+### SiliconFlow（云端模式必需）
 
-### 快速开始
+在 [SiliconFlow](https://cloud.siliconflow.cn/) 创建 Key，然后在 WebUI 的 “SiliconFlow API Key” 输入框填写。Key 只保存在浏览器 localStorage，并发送给本机服务。
 
-```bash
-# 1. 克隆你自己的仓库
-git clone <your-repository-url>
-cd douyin-mcp-server
+也可在当前 PowerShell 设置：
 
-# 2. 安装依赖
-uv sync --extra web
+    $env:SILICONFLOW_API_KEY="sk-..."
 
-# 3. 启动服务
-uv run python web/app.py
-```
+默认使用 FunAudioLLM/SenseVoiceSmall。上传前转换为 16 kHz、单声道、64 kbps MP3；超出单次限制时自动切片。
 
-打开浏览器访问 **http://localhost:8080**
+### DeepSeek（可选）
 
-### 配置 DeepSeek API Key
+DeepSeek 只负责去口水词、补标点和分段：
 
-有两种方式配置 API Key：
+    $env:DEEPSEEK_API_KEY="sk-..."
 
-**方式一：浏览器内配置**
+没有 DeepSeek Key 时仍会正常返回并保存 SenseVoice 原始逐字稿。DeepSeek 请求失败也不会丢失已完成的 ASR 结果。
 
-1. 打开 WebUI 页面
-2. 点击顶部的「API 未配置」按钮
-3. 在弹窗中输入 API Key 并保存
-4. API Key 保存在浏览器本地，仅随提取请求发送给本机服务
+环境变量示例见 [.env.example](.env.example)。服务不会把完整 Key 写入日志或输出文件。
 
-**方式二：环境变量**
+## 切换到本地 Whisper
 
-```bash
-export DOUYIN_DEEPSEEK_API_KEY="<your-deepseek-api-key>"
-uv run python web/app.py
-```
+本地模式是可选的离线高级模式，不是默认依赖：
 
-本地 ASR 不需要密钥；DeepSeek Key 只用于最后一步口播整理。
+    uv sync --extra web --extra local
+    $env:DOUYIN_ASR_MODE="local"
+    uv run --extra web --extra local python web/app.py
 
-### 功能说明
+也可直接在 WebUI 选择“本地 Whisper”。首次使用会按 faster-whisper 的标准方式下载模型；默认使用 small / CPU int8。可用 DOUYIN_MODEL_HUB 指定缓存目录，未设置时使用标准 Hugging Face 缓存，不依赖固定盘符。
 
-| 操作 | 说明 | 需要 API |
-|------|------|:--------:|
-| **获取信息** | 解析视频标题、ID，获取无水印下载链接 | ❌ |
-| **提取文案** | HTTP/Playwright → 音频 → 本地 ASR → DeepSeek | ✅（仅整理） |
-| **下载视频** | 点击下载链接保存无水印视频 | ❌ |
-| **复制/下载文案** | 一键复制或下载 Markdown 格式文案 | - |
+## 工作流程
 
-### 使用步骤
+1. 从普通、精选、API 参数或短链接中识别视频 ID。
+2. 先尝试 HTTP 解析和下载；失败后自动启动 Chrome、Edge，最后才尝试 Playwright 自带 Chromium。
+3. FFmpeg 准备音频。
+4. 默认上传 SiliconFlow SenseVoice；本地模式使用 faster-whisper。
+5. 有 DeepSeek Key 时整理文案；没有或整理失败时返回原始逐字稿。
 
-1. **粘贴链接** - 将分享链接粘贴到输入框
-2. **点击按钮** - 选择「获取信息」或「提取文案」
-3. **查看结果** - 右侧显示视频信息和提取的文案
-4. **导出** - 复制文案或下载 Markdown 文件
+输出位于 output/<video_id>/：
 
----
+    audio.m4a
+    transcript-raw.md
+    copy.md
+    metadata.json
+    run-report.json
 
-## 🚀 MCP Server
+WebUI 展示标题、视频 ID、原始逐字稿、可选整理文案、耗时、解析方式和 ASR 模型。
 
-在 Claude Desktop、Cherry Studio 等支持 MCP 的应用中使用。
+## 命令行与 MCP
 
-### 配置方法
+    uv run python scripts/douyin_downloader.py -l "抖音链接" -a info
+    $env:SILICONFLOW_API_KEY="sk-..."
+    uv run python scripts/douyin_downloader.py -l "抖音链接" -a extract
+    uv run --extra local python scripts/douyin_downloader.py -l "抖音链接" -a extract --asr-mode local
 
-编辑 MCP 配置文件，添加：
+MCP 入口为 douyin-mcp-server，提供 extract_douyin_text、parse_douyin_video_info、get_douyin_download_link 和 recognize_audio_file。
 
-```json
-{
-  "mcpServers": {
-    "douyin-mcp": {
-      "command": "uvx",
-      "args": ["douyin-mcp-server"],
-      "env": {
-        "DOUYIN_DEEPSEEK_API_KEY": "<your-deepseek-api-key>"
-      }
-    }
-  }
-}
-```
+## 常见问题与排错
 
-`DOUYIN_DEEPSEEK_API_KEY` 只放运行环境，不写入仓库、输出文件或运行报告。
+**HTTP 页面中没有 videoInfoRes / _ROUTER_DATA**
+这是页面结构变化导致的快速解析失败。程序会自动进入浏览器降级；只要浏览器成功，无需处理该内部错误。
 
-### 可用工具
+**未检测到 Node.js**
+安装 Node.js 18+，重新打开终端，用 node -v 确认。
 
-| 工具名 | 功能 | 需要 API |
-|--------|------|:--------:|
-| `parse_douyin_video_info` | 解析视频信息 | ❌ |
-| `get_douyin_download_link` | 获取下载链接 | ❌ |
-| `extract_douyin_text` | 自动降级、本地转写并整理口播 | ✅（仅整理） |
-| `recognize_audio_file` | 本机 faster-whisper 识别音频 | ❌ |
-| `recognize_audio_url` | 识别在线音频链接 | ✅ (百炼) |
+**Playwright package 不存在**
+运行 npm install。项目优先使用 Chrome/Edge，通常不必额外下载约 200 MB 的 Chromium。
 
-### 对话示例
+**未检测到 Chrome/Edge**
+安装 Chrome 或 Edge。确需自带浏览器时运行 npx playwright install chromium。
 
-```
-用户：帮我提取这个视频的文案 https://v.douyin.com/xxxxx/
+**未检测到 ffmpeg**
+运行 winget install Gyan.FFmpeg，重新打开终端，再用 ffmpeg -version 确认。
 
-Claude：我来帮你提取视频文案...
-[调用 extract_douyin_text 工具]
-提取完成，文案内容如下：
-...
-```
+**SiliconFlow Key 未填写、无效或网络失败**
+确认 WebUI 输入或 SILICONFLOW_API_KEY，检查余额与网络。自动测试不会调用真实 API。
 
----
+**faster-whisper-medium 权重不存在**
+默认流程不使用 medium，也不要求下载 GB 级模型。本地模式建议先用 small；模型可自动下载或通过 DOUYIN_MODEL_HUB 指定缓存。
 
-## 🛠️ 命令行工具
+**DeepSeek 失败**
+结果仍包含原始逐字稿。检查可选的 DEEPSEEK_API_KEY 后可重试。
 
-适合开发者和批量处理场景。
+## 测试
 
-### 安装
+    uv run python -m unittest discover -s tests -v
+    uv run python -c "import douyin_mcp_server.server, scripts.douyin_downloader, web.app"
 
-```bash
-git clone https://github.com/yzfly/douyin-mcp-server.git
-cd douyin-mcp-server
-uv sync
-```
+测试使用 mock，不访问抖音，也不消耗付费 API。
 
-### 命令说明
+## 来源、许可与免责声明
 
-```bash
-# 查看帮助
-uv run python scripts/douyin_downloader.py --help
+Based on / forked from: [yzfly/douyin-mcp-server](https://github.com/yzfly/douyin-mcp-server).
 
-# 获取视频信息（无需 API）
-uv run python scripts/douyin_downloader.py -l "分享链接" -a info
-
-# 下载无水印视频
-uv run python scripts/douyin_downloader.py -l "分享链接" -a download -o ./videos
-
-# 提取文案（本地 ASR；整理阶段需要 DOUYIN_DEEPSEEK_API_KEY）
-export DOUYIN_DEEPSEEK_API_KEY="<your-deepseek-api-key>"
-uv run python scripts/douyin_downloader.py -l "分享链接" -a extract -o ./output
-
-```
-
-### 输出格式
-
-```
-output/
-└── 7600361826030865707/
-    ├── audio.m4a          # 已校验的完整音频
-    ├── transcript-raw.md  # 本地 ASR 原始逐字稿
-    ├── copy.md            # DeepSeek 整理后的口播
-    ├── metadata.json
-    └── run-report.json    # 五阶段状态和验证证据
-```
-
----
-
-## 📋 系统要求
-
-| 依赖 | 说明 | 安装方式 |
-|------|------|----------|
-| uv | Python 包管理 | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
-| Python | 3.10–3.13（推荐 3.12） | `uv python install 3.12` |
-| FFmpeg | 音视频处理 | `brew install ffmpeg` (macOS) <br> `apt install ffmpeg` (Ubuntu) |
-| faster-whisper medium | 本地 ASR 权重 | 默认读取 `D:\AI_Tools\models\huggingface\hub` |
-| Playwright | HTTP 解析失败后的浏览器降级 | Windows 使用 `D:\AI_Tools\bin\playwright-node.cmd` |
-
----
-
-## 🔧 技术说明
-
-### 固定工作流
-
-1. HTTP 解析分享链接；失败时自动降级到 Playwright。
-2. HTTP 分支下载视频；浏览器分支按 Range 下载签名音频。
-3. HTTP 分支用 FFmpeg 抽音；浏览器分支用 ffprobe 校验完整音频。
-4. 本机 `faster-whisper-medium / CPU int8` 生成带时间戳逐字稿。
-5. DeepSeek 整理成口播文案，并写入 `run-report.json`。
-
----
-
-## 📝 更新日志
-
-### v1.5.0（当前工作站版）
-
-- HTTP 解析失败自动降级到共享 Playwright
-- 使用本机 `faster-whisper-medium / CPU int8`，ASR 不再依赖云端 API
-- 使用 DeepSeek V4 Flash 整理口播文案
-- 固定输出音频、原始逐字稿、整理文案、元数据和运行报告
-
-### v1.4.1
-
-- 🔧 **MCP Server 修复** - `API_KEY` 现在正确对应硅基流动密钥，与文档一致；同时兼容旧版 `DASHSCOPE_API_KEY` 配置
-- ♻️ **恢复工具** - 恢复 `recognize_audio_file` / `recognize_audio_url` 工具及 `extract_douyin_text` 的 `context` 参数
-- 🛡️ **WebUI 安全加固** - 下载接口不再代理任意 URL，默认仅监听本机
-- ⚡ **WebUI 性能** - 提取文案不再阻塞其他请求
-- 📦 **依赖精简** - WebUI 依赖改为可选安装（`pip install "douyin-mcp-server[web]"`）
-
-### v1.4.0
-
-- 🌐 **WebUI** - 新增浏览器可视化界面
-- 🔑 **浏览器配置 API Key** - 无需环境变量
-- 📑 **大文件支持** - 自动分段处理长音频
-
-### v1.3.0
-
-- ✨ Claude Code Skill 支持
-- 📄 Markdown 格式输出
-
-### v1.2.0
-
-- 🔄 API 升级
-
-### v1.0.0
-
-- 🎉 首次发布
-
----
-
-## ⚠️ 免责声明
-
-- 本项目仅供学习和研究使用
-- 使用者需遵守相关法律法规
-- 禁止用于侵犯知识产权的行为
-- 作者不对使用本项目产生的损失承担责任
-
----
-
-## 📄 许可证
-
-Apache License 2.0
-
-## 🤝 贡献
-
-提交 Issue 或 Pull Request 前，请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。安全问题请按 [SECURITY.md](SECURITY.md) 的方式私下报告。
-
-准备发布到自己的 GitHub 仓库前，请把 `pyproject.toml` 中的 `project.urls` 补成你的仓库地址，并按需要修改项目名称和作者信息。
-
-## 上游来源
-
-原始项目作者：**yzfly**（[GitHub](https://github.com/yzfly)）。
+项目按 [Apache License 2.0](LICENSE) 发布。仅供学习与研究；请遵守平台条款、版权与当地法律，不要处理无权使用的内容。
